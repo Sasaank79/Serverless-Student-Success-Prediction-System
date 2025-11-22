@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*.class
+.env
+.venv
+env/
+venv/
+*.pkl
+*.h5
+data/*.csv
+.DS_Store
+.coverage
+htmlcov/
