@@ -1,227 +1,93 @@
-# 🚀 Serverless Student Dropout Prediction System  
-*A full end-to-end ML pipeline: from raw data → model → API → Docker → AWS Lambda.*
+# Student Dropout and Academic Success Prediction (V2)
 
-This project started as a simple “train a model on the UCI student dataset” task.  
-But I wanted to go beyond the usual notebook experiment. So I turned it into a **production-style ML system** with a real deployment flow, real engineering decisions, and a fully serverless inference API.
+### 🚀 [View Live Demo / Working Prototype](https://Sasaank79.github.io/Serverless-Student-Success-Prediction-System/)
+*(Click above to test the deployed model)*
 
-It’s not a real university product — it’s a **technical prototype** designed to show how a modern ML workflow comes together in practice. Everything from preprocessing to Dockerization to Lambda is implemented cleanly and reproducibly.
+## Project Overview
+This project implements a production-grade Machine Learning pipeline to predict student dropout and academic success using the [UCI Predict Students' Dropout and Academic Success dataset](https://archive.ics.uci.edu/ml/datasets/Predict+Students'+Dropout+and+Academic+Success).
 
----
+**V2 Updates**:
+- **Advanced Feature Engineering**: Interaction ratios and semester aggregations.
+- **Class Imbalance Handling**: SMOTE applied to training data.
+- **Stacking Ensemble**: Combines XGBoost, LightGBM, and CatBoost with a Logistic Regression meta-learner.
+- **AWS Lambda Support**: Dockerfile and guide for serverless deployment.
+- **Input Validation**: Strict Pydantic validation for API inputs.
 
-## 🔍 What This Project Does
+## Architecture
 
-- Takes student demographic + academic records  
-- Learns patterns related to dropout / continuation / graduation  
-- Trains a **stacking ensemble** (XGBoost + LightGBM + CatBoost → Logistic Regression)  
-- Handles messy categorical/numerical data  
-- Deals with class imbalance the right way (SMOTE *inside* CV only)  
-- Serves predictions through a **FastAPI** endpoint  
-- Packs the whole thing into a Docker image  
-- Deploys it to **AWS Lambda** as a serverless API  
-
----
-
-# 🧠 Why I Built It  
-Most ML projects stop at “here’s my accuracy.”  
-I built this to demonstrate the **entire ML lifecycle**, not just the model.
-
-I wanted to show that I can:
-
-- design a pipeline  
-- train + tune models  
-- package them correctly  
-- deploy them serverlessly  
-- debug real-world infra problems  
-
-I ran into practical issues (CloudShell storage → moved to EC2 → ECR → Lambda), which made this a realistic engineering experience.
-
----
-
-# 🏗️ System Architecture
-
-```text
-             Offline (Training)                         Online (Inference)
- ┌──────────────────────────────┐           ┌────────────────────────────────┐
- │ UCI Student Dataset          │           │ Client sends JSON to API      │
- └───────────────┬──────────────┘           └────────────────────────────────┘
-                 │                                      │
-                 ▼                                      ▼
-      ┌──────────────────────┐              ┌────────────────────────────┐
-      │ Data & Feature Build │              │ FastAPI app on AWS Lambda  │
-      │ - Encoding           │              │ - Input validation          │
-      │ - Scaling            │              │ - Preprocessing             │
-      │ - Feature engineering│              └───────────────┬────────────┘
-      └───────────────┬──────┘                              │
-                      ▼                                      ▼
-      ┌────────────────────────────────┐        ┌──────────────────────────┐
-      │ Stacking Ensemble Training     │        │ Preloaded Stacking Model │
-      │ - XGBoost / LGBM / CatBoost    │        └──────────────────────────┘
-      │ - SMOTE in CV only            │                       │
-      └────────────────────────────────┘                       ▼
-                      │                             JSON prediction response
-                      ▼
-           Model artifact (pkl)
-                      │
-       Docker Image (Lambda Runtime)
-                      │
-                AWS ECR → Lambda
+```mermaid
+graph TD
+    A[Raw Data] --> B(Data Pipeline)
+    B --> C{Feature Engineering}
+    C -->|SMOTE & Scaling| D[Processed Data]
+    D --> E[Stacking Ensemble]
+    E --> F[Model Artifact .pkl]
+    F --> G[Docker Container]
+    G --> H[AWS ECR]
+    H --> I[AWS Lambda]
+    I --> J((Public API))
 ```
 
----
+## Key Results
+- **Best Model**: Hyper-Tuned Stacking Ensemble
+- **Accuracy**: **77.54%**
+- **F1-Score**: **0.7724**
+- **ROC-AUC**: **0.8579**
 
-# 📦 Repository Structure
+## Project Structure
+- `data/`: Dataset storage (raw and processed_v2)
+- `src/`: Source code
+    - `data/`: Data loading
+    - `features/`: Feature engineering (`advanced_features.py`)
+    - `models/`:
+        - `train_pipeline.py`: **Unified Training Pipeline**
+        - `experiments/`: Legacy experiments and individual model scripts
+    - `api/`: FastAPI application with validation
+- `notebooks/`: Exploratory Data Analysis
+- `reports/`: Generated figures and plots
+- `tests/`: Unit and integration tests
 
-```text
-Student_Success_AI/
-├── README.md
-├── requirements.txt
-├── aws_deployment.md
-├── Dockerfile
-│
-├── lambda/
-│   ├── Dockerfile
-│   └── handler.py
-│
-├── src/
-│   ├── api/main.py
-│   ├── data/
-│   ├── features/
-│   └── models/
-│
-└── tests/
-    └── test_api.py
-```
+## Setup & Usage
 
----
+### Prerequisites
+- Python 3.9+
+- Docker (optional)
 
-# 🧪 Dataset  
-- UCI “Predict Students’ Dropout and Academic Success”  
-- ~4,424 samples, 36 features  
-- Target: `Dropout`, `Enrolled`, `Graduate`  
-- Challenges: small dataset, imbalanced classes, mixed variable types  
+### Installation
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
----
+### Running the Pipeline (V2)
+1. **Download Data**:
+   ```bash
+   python3 src/data/make_dataset.py
+   ```
+2. **Process Data (V2)**:
+   ```bash
+   python3 src/features/advanced_features.py
+   ```
+3. **Train & Package (Unified Pipeline)**:
+   ```bash
+   python3 src/models/train_pipeline.py
+   ```
+   *This script loads data, optimizes hyperparameters, trains the stacking ensemble, evaluates it, saves the artifact, and prints deployment instructions.*
 
-# ⚙️ Training Pipeline
+### API Deployment
+1.  **Run Locally**:
+    ```bash
+    uvicorn src.api.main:app --reload
+    ```
+2.  **Deploy to AWS Lambda (Docker)**:
+    -   See [aws_deployment.md](aws_deployment.md).
 
-- One-hot encoding (nominal)  
-- Ordinal encoding (where applicable)  
-- Standard scaling (after train-test split)  
-- Feature engineering:
-  - semester aggregates  
-  - performance ratios  
-- SMOTE applied **inside** cross-validation  
-- Stacking ensemble:
-  - XGBoost  
-  - LightGBM  
-  - CatBoost  
-  - Logistic Regression (meta-learner)  
+### 🌍 Frontend Demo
+This project includes a simple HTML/JS frontend (`index.html`) to interact with the live API.
 
-Primary metric: **Macro-F1**  
-Typical result: **≈ 0.77 Macro-F1**
+**How to use:**
+1.  **Locally**: Simply double-click `index.html` to open it in your browser.
+2.  **Online**: If deployed to GitHub Pages, visit `https://YOUR_USERNAME.github.io/Student-Success-AI/`.
 
----
-
-# 🌐 Running the API Locally
-
-Start FastAPI:
-
-```bash
-uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-Example request:
-
-```bash
-curl -X POST "http://localhost:8000/predict" \
-  -H "Content-Type: application/json" \
-  -d '{
-        "age": 21,
-        "gender": "M",
-        "tuition_fees_up_to_date": 1,
-        "curricular_units_1st_sem_enrolled": 6,
-        "curricular_units_1st_sem_approved": 4
-      }'
-```
-
-Example response:
-
-```json
-{
-  "prediction": "Dropout",
-  "probabilities": {
-    "Dropout": 0.78,
-    "Enrolled": 0.15,
-    "Graduate": 0.07
-  }
-}
-```
-
----
-
-# 🐳 Docker
-
-Local:
-
-```bash
-docker build -t student-success-api .
-docker run -p 8000:8000 student-success-api
-```
-
-Lambda image:
-
-```bash
-docker build -t student-success-lambda -f lambda/Dockerfile .
-```
-
----
-
-# ☁️ AWS Lambda Deployment
-
-Summary of the deployment flow:
-
-```bash
-# 1. Build image
-docker build -t student-success-lambda -f lambda/Dockerfile .
-
-# 2. Push to ECR
-docker push <account>.dkr.ecr.<region>.amazonaws.com/student-success-lambda
-
-# 3. Point Lambda to the ECR image
-```
-
-CloudShell ran out of space, so I used a small EC2 instance to build the Docker image.  
-This is exactly the kind of practical issue real ML engineers deal with.
-
----
-
-# 🔍 Tests
-
-```bash
-pytest tests/
-```
-
----
-
-# ⚠️ Limitations
-
-- Dataset is small and from one institution  
-- Prototype system (not connected to a real university SIS)  
-- Manual deployment (no CI/CD yet)  
-- Lambda image can be optimized further  
-
----
-
-# 💡 Future Improvements
-
-- CI/CD with GitHub Actions  
-- Terraform/SAM packaging for infrastructure  
-- Better API validation  
-- Simple UI dashboard for advisors  
-- Model registry + versioning  
-- Drift monitoring  
-
----
-
-# 📄 License  
-MIT License
+*Note: The frontend connects to the AWS Lambda URL configured in the JS code.*

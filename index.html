@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Success AI</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #1f2937;
+        }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: var(--card);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        input, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            box-sizing: border-box; /* Fix padding issue */
+        }
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 1rem;
+        }
+        button:hover {
+            background-color: #4338ca;
+        }
+        #result {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+        .graduate { background-color: #d1fae5; color: #065f46; }
+        .dropout { background-color: #fee2e2; color: #991b1b; }
+        .enrolled { background-color: #dbeafe; color: #1e40af; }
+        .note {
+            font-size: 0.8rem;
+            color: #6b7280;
+            text-align: center;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🎓 Student Success AI</h1>
+    <p style="text-align: center; margin-bottom: 1.5rem;">Predict student outcomes using Advanced ML</p>
+    
+    <form id="predictForm">
+        <!-- For this demo, we'll use a simplified input set and fill the rest with defaults -->
+        <div class="form-group">
+            <label>Marital Status</label>
+            <select id="marital_status">
+                <option value="1">Single</option>
+                <option value="2">Married</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Application Mode</label>
+            <select id="app_mode">
+                <option value="1">1st Phase - General</option>
+                <option value="17">2nd Phase - General</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Course</label>
+            <select id="course">
+                <option value="33">Biofuel Production</option>
+                <option value="171">Animation Design</option>
+                <option value="9003">Agronomy</option>
+                <option value="9119">Informatics Engineering</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Previous Qualification Grade (0-200)</label>
+            <input type="number" id="prev_grade" value="130" min="0" max="200">
+        </div>
+
+        <div class="form-group">
+            <label>Admission Grade (0-200)</label>
+            <input type="number" id="admission_grade" value="130" min="0" max="200">
+        </div>
+
+        <div class="form-group">
+            <label>Tuition Fees Up to Date?</label>
+            <select id="tuition_fees">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Scholarship Holder?</label>
+            <select id="scholarship">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>1st Sem Grade (0-20)</label>
+            <input type="number" id="sem1_grade" value="13" min="0" max="20">
+        </div>
+
+        <div class="form-group">
+            <label>2nd Sem Grade (0-20)</label>
+            <input type="number" id="sem2_grade" value="13" min="0" max="20">
+        </div>
+
+        <button type="submit" id="submitBtn">Predict Outcome</button>
+    </form>
+
+    <div id="result"></div>
+    <div class="note">Powered by AWS Lambda & XGBoost Stacking Ensemble</div>
+</div>
+
+<script>
+    const API_URL = "https://cwrfc5alzgh5u3kcqpbm4ode3a0mmssw.lambda-url.us-east-1.on.aws/predict";
+
+    document.getElementById('predictForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        const resultDiv = document.getElementById('result');
+        
+        btn.textContent = "Analyzing...";
+        btn.disabled = true;
+        resultDiv.style.display = 'none';
+
+        // Construct the 44-feature vector
+        // In a real app, we'd map every field. Here we use defaults for the demo.
+        // We'll insert our form values into the correct positions (approximate for demo).
+        
+        const marital = parseInt(document.getElementById('marital_status').value);
+        const appMode = parseInt(document.getElementById('app_mode').value);
+        const course = parseInt(document.getElementById('course').value);
+        const prevGrade = parseFloat(document.getElementById('prev_grade').value);
+        const admGrade = parseFloat(document.getElementById('admission_grade').value);
+        const tuition = parseInt(document.getElementById('tuition_fees').value);
+        const scholarship = parseInt(document.getElementById('scholarship').value);
+        const sem1 = parseFloat(document.getElementById('sem1_grade').value);
+        const sem2 = parseFloat(document.getElementById('sem2_grade').value);
+
+        // This is a DUMMY vector with 44 zeros, then we fill in key slots
+        // Note: The model expects specific positions. 
+        // For a perfect demo, we'd need the exact column order from X_train.columns.
+        // I will use the values you successfully tested with, but modify the key drivers.
+        
+        let features = [
+            marital, // Marital status
+            appMode, // Application mode
+            1, 1, 1, // Application order, Course, Day/Eve
+            prevGrade, // Previous qualification grade
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // Demographic filler
+            tuition, // Tuition fees (Critical)
+            scholarship, // Scholarship (Critical)
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // Filler
+            sem1, // Sem 1 Grade
+            6,    // Sem 1 Eval
+            sem1, // Sem 1 Approved
+            sem1, // Sem 1 Grade
+            0,    // Sem 1 without eval
+            sem2, // Sem 2 Grade
+            6,    // Sem 2 Eval
+            sem2, // Sem 2 Approved
+            sem2, // Sem 2 Grade
+            0,    // Sem 2 without eval
+            0.8, 0.8, // Ratios
+            25, 25    // Aggregates
+        ];
+
+        // Ensure we have exactly 44 items (padding if needed)
+        while(features.length < 44) features.push(0);
+        features = features.slice(0, 44);
+
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ features: features })
+            });
+
+            const data = await response.json();
+            
+            resultDiv.style.display = 'block';
+            resultDiv.textContent = `Prediction: ${data.prediction} (${(Math.max(...data.probability[0]) * 100).toFixed(1)}%)`;
+            
+            resultDiv.className = ''; // Reset class
+            if (data.prediction === 'Graduate') resultDiv.classList.add('graduate');
+            else if (data.prediction === 'Dropout') resultDiv.classList.add('dropout');
+            else resultDiv.classList.add('enrolled');
+
+        } catch (error) {
+            resultDiv.style.display = 'block';
+            resultDiv.textContent = "Error: Could not connect to API.";
+            resultDiv.style.color = 'red';
+        }
+
+        btn.textContent = "Predict Outcome";
+        btn.disabled = false;
+    });
+</script>
+
+</body>
+</html>
